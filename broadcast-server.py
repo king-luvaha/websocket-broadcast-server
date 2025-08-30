@@ -183,3 +183,11 @@ class BroadcastServer:
             self.server.close()
             await self.server.wait_closed()
             logger.info("Server stopped")
+
+class BroadcastClient:
+    def __init__(self, host: str = "localhost", port: int = 8765):
+        self.host = host
+        self.port = port
+        self.websocket = None
+        self.username = None
+        self.running = False
