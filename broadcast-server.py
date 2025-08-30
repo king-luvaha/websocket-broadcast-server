@@ -99,3 +99,40 @@ class BroadcastServer:
             # Remove disconnected clients
             for client in disconnected_clients:
                 await self.unregister_client(client)
+
+    async def handle_client(self, websocket):
+        """Handle individual client connections and messages."""
+        await self.register_client(websocket)
+        
+        try:
+            async for raw_message in websocket:
+                try:
+                    # Parse the incoming message
+                    data = json.loads(raw_message)
+                    
+                    if data.get("type") == "message":
+                        # Create broadcast message with timestamp
+                        broadcast_msg = {
+                            "type": "message",
+                            "message": data.get("message", ""),
+                            "sender": data.get("sender", "Anonymous"),
+                            "timestamp": datetime.now().isoformat()
+                        }
+                        
+                        # Log the message
+                        logger.info(f"Broadcasting message from {broadcast_msg['sender']}: {broadcast_msg['message']}")
+                        
+                        # Broadcast to all clients
+                        await self.broadcast_to_all(json.dumps(broadcast_msg))
+                        
+                except json.JSONDecodeError:
+                    logger.warning(f"Received invalid JSON from client {websocket.remote_address}")
+                except Exception as e:
+                    logger.error(f"Error handling message: {e}")
+                    
+        except (websockets.exceptions.ConnectionClosed, ConnectionResetError):
+            pass
+        except Exception as e:
+            logger.error(f"Error in client handler: {e}")
+        finally:
+            await self.unregister_client(websocket)
