@@ -223,3 +223,33 @@ class BroadcastClient:
             print(f"Error details: {e}")
         except Exception as e:
             print(f"❌ Connection error: {e}")
+
+    async def listen_for_messages(self):
+        """Listen for incoming messages from the server."""
+        try:
+            async for raw_message in self.websocket:
+                try:
+                    message = json.loads(raw_message)
+                    
+                    if message.get("type") == "message":
+                        timestamp = datetime.fromisoformat(message["timestamp"]).strftime("%H:%M:%S")
+                        sender = message.get("sender", "Unknown")
+                        content = message.get("message", "")
+                        print(f"[{timestamp}] {sender}: {content}")
+                        
+                    elif message.get("type") == "system":
+                        timestamp = datetime.fromisoformat(message["timestamp"]).strftime("%H:%M:%S")
+                        content = message.get("message", "")
+                        print(f"[{timestamp}] SYSTEM: {content}")
+                        
+                except json.JSONDecodeError:
+                    print("Received invalid message from server")
+                except Exception as e:
+                    logger.error(f"Error processing message: {e}")
+                    
+        except (websockets.exceptions.ConnectionClosed, ConnectionResetError):
+            print("\n💔 Connection to server lost")
+            self.running = False
+        except Exception as e:
+            print(f"\n❌ Error receiving messages: {e}")
+            self.running = False
