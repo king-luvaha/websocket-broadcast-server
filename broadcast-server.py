@@ -296,3 +296,20 @@ class BroadcastClient:
             self.running = False
             if self.websocket:
                 await self.websocket.close()
+
+async def handle_server_shutdown(server: BroadcastServer):
+    """Handle graceful server shutdown on SIGINT."""
+    def signal_handler():
+        logger.info("Received shutdown signal")
+        asyncio.create_task(server.stop_server())
+    
+    # Set up signal handler for graceful shutdown
+    if sys.platform != "win32":
+        loop = asyncio.get_running_loop()
+        loop.add_signal_handler(signal.SIGINT, signal_handler)
+        loop.add_signal_handler(signal.SIGTERM, signal_handler)
+    
+    try:
+        await server.start_server()
+    except KeyboardInterrupt:
+        await server.stop_server()
