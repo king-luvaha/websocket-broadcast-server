@@ -136,3 +136,25 @@ class BroadcastServer:
             logger.error(f"Error in client handler: {e}")
         finally:
             await self.unregister_client(websocket)
+
+    async def start_server(self):
+        """Start the WebSocket server."""
+        logger.info(f"Starting broadcast server on {self.host}:{self.port}")
+        
+        async def connection_handler(websocket):
+            await self.handle_client(websocket)
+        
+        self.server = await websockets.serve(
+            connection_handler,
+            self.host,
+            self.port,
+            ping_interval=20,
+            ping_timeout=10
+        )
+        
+        print(f"🚀 Broadcast server started on ws://{self.host}:{self.port}")
+        print("Waiting for client connections...")
+        print("Press Ctrl+C to stop the server")
+        
+        # Keep the server running
+        await self.server.wait_closed()
