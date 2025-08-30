@@ -191,3 +191,35 @@ class BroadcastClient:
         self.websocket = None
         self.username = None
         self.running = False
+
+    async def connect(self):
+        """Connect to the broadcast server."""
+        uri = f"ws://{self.host}:{self.port}"
+        
+        # Get username
+        self.username = input("Enter your username: ").strip()
+        if not self.username:
+            self.username = "Anonymous"
+        
+        try:
+            print(f"Connecting to {uri}...")
+            self.websocket = await websockets.connect(uri)
+            self.running = True
+            
+            print(f"✅ Connected to broadcast server as '{self.username}'")
+            print("Type your messages and press Enter to send them.")
+            print("Type '/quit' to disconnect.")
+            print("-" * 50)
+            
+            # Start listening for messages and sending messages concurrently
+            await asyncio.gather(
+                self.listen_for_messages(),
+                self.send_messages()
+            )
+            
+        except (ConnectionRefusedError, OSError, TimeoutError) as e:
+            print(f"❌ Could not connect to server at {uri}")
+            print("Make sure the server is running with 'broadcast-server start'")
+            print(f"Error details: {e}")
+        except Exception as e:
+            print(f"❌ Connection error: {e}")
