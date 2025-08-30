@@ -158,3 +158,28 @@ class BroadcastServer:
         
         # Keep the server running
         await self.server.wait_closed()
+
+    async def stop_server(self):
+        """Stop the WebSocket server gracefully."""
+        if self.server:
+            logger.info("Shutting down server...")
+            
+            # Notify all clients about server shutdown
+            shutdown_msg = {
+                "type": "system",
+                "message": "Server is shutting down. You will be disconnected shortly.",
+                "timestamp": datetime.now().isoformat()
+            }
+            await self.broadcast_to_all(json.dumps(shutdown_msg))
+            
+            # Close all client connections
+            if self.clients:
+                await asyncio.gather(
+                    *[client.close() for client in self.clients.copy()],
+                    return_exceptions=True
+                )
+            
+            # Close the server
+            self.server.close()
+            await self.server.wait_closed()
+            logger.info("Server stopped")
