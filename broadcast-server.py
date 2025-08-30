@@ -43,3 +43,19 @@ class BroadcastServer:
             "timestamp": datetime.now().isoformat()
         }
         await self.broadcast_to_others(json.dumps(notification), websocket)
+
+    async def unregister_client(self, websocket):
+        """Unregister a client connection."""
+        if websocket in self.clients:
+            self.clients.remove(websocket)
+            client_info = f"{websocket.remote_address[0]}:{websocket.remote_address[1]}"
+            logger.info(f"Client disconnected: {client_info}. Total clients: {len(self.clients)}")
+            
+            # Notify remaining clients about disconnection
+            if self.clients:  # Only send if there are still clients connected
+                notification = {
+                    "type": "system",
+                    "message": f"A client has left the chat. {len(self.clients)} client(s) online.",
+                    "timestamp": datetime.now().isoformat()
+                }
+                await self.broadcast_to_all(json.dumps(notification))
