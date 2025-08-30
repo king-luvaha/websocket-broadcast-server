@@ -21,3 +21,25 @@ class BroadcastServer:
         self.port = port
         self.clients: Set = set()          # Track connected clients
         self.server = None
+
+    async def register_client(self, websocket):
+        """Register a new client connection."""
+        self.clients.add(websocket)
+        client_info = f"{websocket.remote_address[0]}:{websocket.remote_address[1]}"
+        logger.info(f"Client connected: {client_info}. Total clients: {len(self.clients)}")
+        
+        # Send welcome message to the new client
+        welcome_msg = {
+            "type": "system",
+            "message": f"Welcome! You are now connected to the broadcast server. {len(self.clients)} client(s) online.",
+            "timestamp": datetime.now().isoformat()
+        }
+        await websocket.send(json.dumps(welcome_msg))
+        
+        # Notify other clients about new connection
+        notification = {
+            "type": "system",
+            "message": f"A new client has joined the chat. {len(self.clients)} client(s) online.",
+            "timestamp": datetime.now().isoformat()
+        }
+        await self.broadcast_to_others(json.dumps(notification), websocket)
