@@ -59,3 +59,23 @@ class BroadcastServer:
                     "timestamp": datetime.now().isoformat()
                 }
                 await self.broadcast_to_all(json.dumps(notification))
+
+    async def broadcast_to_all(self, message: str):
+        """Broadcast message to all connected clients."""
+        if self.clients:
+            # Create a copy of clients set to avoid modification during iteration
+            clients_copy = self.clients.copy()
+            disconnected_clients = []
+            
+            for client in clients_copy:
+                try:
+                    await client.send(message)
+                except (websockets.exceptions.ConnectionClosed, ConnectionResetError):
+                    disconnected_clients.append(client)
+                except Exception as e:
+                    logger.error(f"Error sending message to client: {e}")
+                    disconnected_clients.append(client)
+            
+            # Remove disconnected clients
+            for client in disconnected_clients:
+                await self.unregister_client(client)
