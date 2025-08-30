@@ -313,3 +313,41 @@ async def handle_server_shutdown(server: BroadcastServer):
         await server.start_server()
     except KeyboardInterrupt:
         await server.stop_server()
+
+def main():
+    parser = argparse.ArgumentParser(description="WebSocket Broadcast Server")
+    parser.add_argument(
+        "command", 
+        choices=["start", "connect"], 
+        help="Command to execute: 'start' to run server, 'connect' to connect as client"
+    )
+    parser.add_argument(
+        "--host", 
+        default="localhost", 
+        help="Host address (default: localhost)"
+    )
+    parser.add_argument(
+        "--port", 
+        type=int, 
+        default=8765, 
+        help="Port number (default: 8765)"
+    )
+    
+    args = parser.parse_args()
+    
+    if args.command == "start":
+        server = BroadcastServer(args.host, args.port)
+        try:
+            asyncio.run(handle_server_shutdown(server))
+        except KeyboardInterrupt:
+            print("\nServer stopped")
+    
+    elif args.command == "connect":
+        client = BroadcastClient(args.host, args.port)
+        try:
+            asyncio.run(client.connect())
+        except KeyboardInterrupt:
+            print("\nDisconnected from server")
+
+if __name__ == "__main__":
+    main()
