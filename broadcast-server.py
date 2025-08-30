@@ -79,3 +79,23 @@ class BroadcastServer:
             # Remove disconnected clients
             for client in disconnected_clients:
                 await self.unregister_client(client)
+
+    async def broadcast_to_others(self, message: str, sender):
+        """Broadcast message to all clients except the sender."""
+        if self.clients:
+            clients_copy = self.clients.copy()
+            disconnected_clients = []
+            
+            for client in clients_copy:
+                if client != sender:
+                    try:
+                        await client.send(message)
+                    except (websockets.exceptions.ConnectionClosed, ConnectionResetError):
+                        disconnected_clients.append(client)
+                    except Exception as e:
+                        logger.error(f"Error sending message to client: {e}")
+                        disconnected_clients.append(client)
+            
+            # Remove disconnected clients
+            for client in disconnected_clients:
+                await self.unregister_client(client)
