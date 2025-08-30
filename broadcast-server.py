@@ -253,3 +253,46 @@ class BroadcastClient:
         except Exception as e:
             print(f"\n❌ Error receiving messages: {e}")
             self.running = False
+
+    async def send_messages(self):
+        """Handle sending messages to the server."""
+        try:
+            while self.running:
+                # Use asyncio to handle input without blocking
+                message = await asyncio.get_event_loop().run_in_executor(
+                    None, input, ""
+                )
+                
+                if not self.running:
+                    break
+                    
+                message = message.strip()
+                
+                if message.lower() == '/quit':
+                    break
+                    
+                if message:
+                    # Send message to server
+                    msg_data = {
+                        "type": "message",
+                        "message": message,
+                        "sender": self.username
+                    }
+                    
+                    try:
+                        await self.websocket.send(json.dumps(msg_data))
+                    except (websockets.exceptions.ConnectionClosed, ConnectionResetError):
+                        print("Connection closed while sending message")
+                        break
+                    except Exception as e:
+                        print(f"Error sending message: {e}")
+                        break
+                        
+        except KeyboardInterrupt:
+            pass
+        except Exception as e:
+            logger.error(f"Error in send_messages: {e}")
+        finally:
+            self.running = False
+            if self.websocket:
+                await self.websocket.close()
